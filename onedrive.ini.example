@@ -1,0 +1,14 @@
+# OneDrive / Microsoft Azure AD Configuration Template
+# Copy this file to onedrive.ini and fill in your actual credentials
+# DO NOT commit onedrive.ini to version control
+# Alternatively, use environment variables (see .env.example)
+
+[fcb]
+client_id=your_client_id_here
+client_secret=your_client_secret_here
+tenant_id=your_tenant_id_here
+
+# Note: These values can also be set via environment variables:
+# MSAL_CLIENT_ID, MSAL_CLIENT_SECRET, MSAL_TENANT_ID
+# See static_variables.py for how these are used
+

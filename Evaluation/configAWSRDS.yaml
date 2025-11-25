@@ -1,0 +1,47 @@
+external:
+  host: voidsdb.c2wwnfcaisej.eu-central-1.rds.amazonaws.com
+  database: external
+  user: postgres
+  password: voids4thewin
+
+wefriends:
+  host: voidsdb.c2wwnfcaisej.eu-central-1.rds.amazonaws.com
+  database: wefriends
+  user: postgres
+  password: voids4thewin
+
+stoertebekker:
+  host: voidsdb.c2wwnfcaisej.eu-central-1.rds.amazonaws.com
+  database: stoertebekker
+  user: postgres
+  password: voids4thewin
+
+wwav:
+  host: voidsdb.c2wwnfcaisej.eu-central-1.rds.amazonaws.com
+  database: wwav
+  user: postgres
+  password: voids4thewin
+
+external-test:
+  host: nogl-dev.c2wwnfcaisej.eu-central-1.rds.amazonaws.com
+  database: external
+  user: postgres
+  password: voidsfortesting
+
+wefriends-test:
+  host: nogl-dev.c2wwnfcaisej.eu-central-1.rds.amazonaws.com
+  database: wefriends
+  user: postgres
+  password: voidsfortesting
+
+stoertebekker-test:
+  host: nogl-dev.c2wwnfcaisej.eu-central-1.rds.amazonaws.com
+  database: stoertebekker
+  user: postgres
+  password: voidsfortesting
+
+crossclient:
+  host: nogl-dev.c2wwnfcaisej.eu-central-1.rds.amazonaws.com
+  database: crossclient
+  user: postgres
+  password: voidsfortesting

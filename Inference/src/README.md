@@ -1,0 +1,1 @@
+The TFTModelHandler class is designed to handle the loading and selection of the best TemporalFusionTransformer (TFT) model. The class contains methods for loading a TFT model from a checkpoint file, finding the best model based on a given metric, and loading the best model. The class also includes a method for getting the current date in the format YYYYMMDD.

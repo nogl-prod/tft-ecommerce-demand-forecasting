@@ -1,0 +1,257 @@
+# # Amazon SP-API credentials
+# LWA_APP_ID = "amzn1.application-oa2-client.d241ea88f2dc429c80d1d618c5e8e744"
+# LWA_CLIENT_SECRET = 'amzn1.oa2-cs.v1.06b6045262e7500bdb834697e85afea33ead6d34e89fdae10ab59a0487ea42c6'
+
+# # AWS Access Keys
+# SP_API_ACCESS_KEY = "AKIA2OX3BG7JAJC4DKFG"
+# SP_API_SECRET_KEY = "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"
+# SP_API_ROLE_ARN = "arn:aws:iam::718859745234:role/amazon_seller_partner_api_role"
+
+# # Customer specific refresh token
+# keys_stoertebekker = {"seller_id":'A22T8XEIQ4N8DC', "refresh_token":"Atzr|IwEBIK3gvEizF3yF7NZ6muZ0jn_LBwbInW5eYjnxHw8GznsunIXPtoidDDh20Z7GV5U9iU0CBWG30y3Euqw8q1WHOjX2Qgd_7P05dCTrCY_p1RoNa6btterbD6lZmr2OHlJ-tTpvkvN09cL4TQqG3KvErtr8wSzbmIjYLUlrcVyqcSJDLAw0cndtmTC7fUV-ioON-DLj8861FnJ962dgJQP91btTo_1hZvBf84a4qNZuwho9nO5Adzbo71F2gRDiBhyOJw4Y7Qm1Z5Er8Jo4YdvvaQy8CPP2pxV7uvFUC4mdQUgi-PnKL29B0mezrt-Fjoy0_0hyDzZhb9DcFTF9bmZ8I2OR"}
+# keys_soccess = {"seller_id":'A1XRF8ZYX042GR', "refresh_token":"Atzr|IwEBIO4EHvwt76QMVO3xHBID9XKwI8XGOmWpYcO92mKJtg4Is7krlw6XTeOlrl-PV8SKxNiDtUCyP5Lbxfx71gE1GWQN3CWnAsZD7I1mVSb4NNuW3015U5IxciB4mElAaj14IwGgzdQFDPXnlh0wfsDHi8X82n2Ykl6oSdy5yR7nHjcklGZT_pvGvs--Rp2BObAaBTKLyIYtnTkbfREdTNSDOYNcjqTCsu29u_K3lwTPu3uGAe0VmXEHKlpDDGmoY_B3bAj-u_NZFuE_ljHAjPgHFaqpEi2L6DIsq_xAe4vmg9VzNmDT6iVShdXU28uMctarG8U9wByFvp41Xo8ihqg9e1At"}
+# keys_dogsntiger = {"seller_id":'A2JOI9LRKPU7WW', "refresh_token":"Atzr|IwEBIO_IZ4ZvZ-QtXjdUjG9cK8i4_BxQAWkgrwUzgsl_8Sxr_NR5jq3AiBnG1tchNdVumna3cJhQurtTHN9DFk2JW6JkB-_jpJniTp1ZCAHYBVXxXCaj-0Fb4DOs5Qr-wzIVU-vHMzIcfNq6NZTYmZOrfCd-ucAQ4ZvgxQwzSvfNkborYH_ErSwfqELYibmQgs-viPEYwpFUXxvYvaJXPwN2BNoulGxYQpDP2nxOe9Y7ALTh67knCqxrwVPvGb1wdSrSrIGhvMeMTKgDrzElEdwwhLzkwJIDcT3NIupXhsUpd9yfcGpJvS6CMI1p8DR5RZD6CUQ0syc28nF7UIi8ZS2F8t77"}
+
+# customer_keys = {"stoertebekker":keys_stoertebekker, "dogs-n-tiger":keys_dogsntiger, "soccess":keys_soccess}
+
+
+""" MAPPINGS OF COLUMN NAMES ------------------------------------------------------------------------------------------------ """
+# global mappings
+global_mapping = {
+    "sku":"variant_sku",
+    "seller-sku": "variant_sku",
+    "sellerSku": "variant_sku",
+    "product-id": "product_id",
+    "Product_Offers_SellerSKU": "variant_sku",
+    "asin": "asin",
+    "asin1":"asin",
+    "ASIN":"asin",
+    "Product_Identifiers.MarketplaceASIN.ASIN": "asin",
+    "summaries_asin":"asin",
+    "summaries_fnSku":"fnsku",
+    "fnSku":"fnsku",
+    "item-name": "variant_title",
+    "summaries_itemName": "variant_title",
+    "productName": "product_title",
+    "Product_Identifiers.MarketplaceASIN.MarketplaceId": "marketplaceid",
+    "summaries_marketplaceId": "marketplaceid",
+    "marketplaceId": "marketplaceid",
+    "lastUpdatedTime": "lastupdatedtime",
+    "ItemCondition": "variant_condition",
+    "summaries_conditionType": "variant_condition",
+    "Product_Offers_ItemCondition": "product_condition",
+    "Product_Offers_ItemSubCondition": "product_subcondition",
+    "condition":"variant_condition",
+    "item-condition": "item_condition_number",
+}
+
+# column mapping Products - INCLUDED
+products_report_mapping = {
+    **global_mapping,
+    "item-description": "variant_description",
+    "listing-id": "listing_id",
+    "price": "price",
+    "quantity": "quantity",
+    "open-date": "product_published_at", # changed to align product_info across sales channels
+    "image-url": "image_url",
+    "item-is-marketplace": "item_is_marketplace",
+    "product-id-type": "product_id_type",
+    "zshop-shipping-fee": "zshop_shipping_fee",
+    "item-note": "item_note",
+    "zshop-category1": "zshop_category1",
+    "zshop-browse-path": "zshop_browse_path",
+    "zshop-storefront-feature": "zshop_storefront_feature",
+    "asin2": "asin2",
+    "asin3": "asin3",
+    "will-ship-internationally": "will_ship_internationally",
+    "expedited-shipping": "expedited_shipping",
+    "zshop-boldface": "zshop_boldface",
+    "bid-for-featured-placement": "bid_for_featured_placement",
+    "add-delete": "add_delete",
+    "pending-quantity": "pending_quantity",
+    "fulfillment-channel": "fulfillment_channel",
+    "merchant-shipping-group": "merchant_shipping_group",
+    "status": "status",
+    "Minimum order quantity": "minimum_order_quantity",
+    "Sell remainder": "sell_remainder",
+}
+
+# column mapping ListingItems - INCLUDED
+listing_items_mapping = {
+    **global_mapping,
+    "summaries_productType": "producttype",
+    "summaries_createdDate": "variant_created_at",  # changed to align product_info across sales channels
+    "summaries_lastUpdatedDate": "lastupdateddate",
+    "summaries_mainImage.link": "mainimage_link",
+    "summaries_mainImage.height": "mainimage_height",
+    "summaries_mainImage.width": "mainimage_width",
+}
+
+# column mapping Inventory
+inventory_mapping = {
+    **global_mapping,
+    "totalQuantity": "totalquantity",
+    "inventoryDetails_fulfillableQuantity": "variant_inventory_quantity", # changed to align product_info across sales channels
+    "inventoryDetails_inboundWorkingQuantity": "inboundworkingquantity",
+    "inventoryDetails_inboundShippedQuantity": "inboundshippedquantity",
+    "inventoryDetails_inboundReceivingQuantity": "inboundreceivingquantity",
+    "inventoryDetails_reservedQuantity.totalReservedQuantity": "totalreservedquantity",
+    "inventoryDetails_reservedQuantity.pendingCustomerOrderQuantity": "pendingcustomerorderquantity",
+    "inventoryDetails_reservedQuantity.pendingTransshipmentQuantity": "pendingtransshipmentquantity",
+    "inventoryDetails_reservedQuantity.fcProcessingQuantity": "fcprocessingquantity",
+    "inventoryDetails_researchingQuantity.totalResearchingQuantity": "totalresearchingquantity",
+    "inventoryDetails_unfulfillableQuantity.totalUnfulfillableQuantity": "totalunfulfillablequantity",
+    "inventoryDetails_unfulfillableQuantity.customerDamagedQuantity": "customerdamagedquantity",
+    "inventoryDetails_unfulfillableQuantity.warehouseDamagedQuantity": "warehousedamagedquantity",
+    "inventoryDetails_unfulfillableQuantity.distributorDamagedQuantity": "distributordamagedquantity",
+    "inventoryDetails_unfulfillableQuantity.carrierDamagedQuantity": "carrierdamagedquantity",
+    "inventoryDetails_unfulfillableQuantity.defectiveQuantity": "defectivequantity",
+    "inventoryDetails_unfulfillableQuantity.expiredQuantity": "expiredquantity",
+    "inventoryDetails_futureSupplyQuantity.reservedFutureSupplyQuantity": "reservedfuturesupplyquantity",
+    "inventoryDetails_futureSupplyQuantity.futureSupplyBuyableQuantity": "futuresupplybuyablequantity",
+    "inventoryDetails_researchingQuantity.researchingQuantityBreakdown_name": "researchingquantitybreakdown_name",
+    "inventoryDetails_researchingQuantity.researchingQuantityBreakdown_quantity": "researchingquantitybreakdown_quantity",
+}
+
+# column mapping Products
+products_mapping = {
+    **global_mapping,
+    "Identifier": "identifier",
+    "Summary": "summary",
+    "Product_Offers_FulfillmentChannel": "productoffers_fulfillmentchannel",
+    "Product_Offers_BuyingPrice.ListingPrice.CurrencyCode": "productoffers_listingprice_currencycode",
+    "Product_Offers_BuyingPrice.ListingPrice.Amount": "productoffers_listingprice_amount",
+    "Product_Offers_BuyingPrice.LandedPrice.CurrencyCode": "productoffers_landedprice_currencycode",
+    "Product_Offers_BuyingPrice.LandedPrice.Amount": "productoffers_landedprice_amount",
+    "Product_Offers_BuyingPrice.Shipping.CurrencyCode": "productoffers_shipping_currencycode",
+    "Product_Offers_BuyingPrice.Shipping.Amount": "productoffers_shipping_amount",
+    "Product_Offers_RegularPrice.CurrencyCode": "productoffers_regularprice_currencycode",
+    "Product_Offers_RegularPrice.Amount": "productoffers_regularprice_amount",
+    "Offers_SubCondition": "offers_subcondition",
+    "Offers_SellerId": "offers_sellerid",
+    "Offers_IsFeaturedMerchant": "offers_isfeaturedmerchant",
+    "Offers_IsBuyBoxWinner": "offers_isbuyboxwinner",
+    "Offers_IsFulfilledByAmazon": "offers_isfulfilledbyamazon",
+    "Offers_Shipping.CurrencyCode": "offers_shipping_currencycode",
+    "Offers_Shipping.Amount": "offers_shipping_amount",
+    "Offers_ListingPrice.CurrencyCode": "offers_listingprice_currencycode",
+    "Offers_ListingPrice.Amount": "offers_listingprice_amount",
+    "Offers_ShippingTime.maximumHours": "offers_maximumhours",
+    "Offers_ShippingTime.minimumHours": "offers_minimumhours",
+    "Offers_ShippingTime.availabilityType": "offers_availabilitytype",
+    "Offers_SellerFeedbackRating.FeedbackCount": "offers_feedbackcount",
+    "Offers_SellerFeedbackRating.SellerPositiveFeedbackRating": "offers_positivefeedbackrating",
+    "Offers_ShipsFrom.Country": "offers_shipsfrom_country",
+    "Offers_PrimeInformation.IsPrime": "offers_isprime",
+    "Offers_PrimeInformation.IsNationalPrime": "offers_isnationalprime",
+    'Offers': 'offers',
+    "Product_SalesRankings_ProductCategoryId": "salesranking_productcategoryid",
+    "Product_SalesRankings_Rank": "salesranking_rank",
+    "Product_CompetitivePricing.CompetitivePrices_belongsToRequester": "competitiveprices_belongstorequester",
+    "Product_CompetitivePricing.CompetitivePrices_condition": "competitiveprices_condition",
+    "Product_CompetitivePricing.CompetitivePrices_subcondition": "competitiveprices_subcondition",
+    "Product_CompetitivePricing.CompetitivePrices_CompetitivePriceId": "competitiveprices_priceid",
+    "Product_CompetitivePricing.CompetitivePrices_Price.LandedPrice.CurrencyCode": "competitiveprices_landedprice_currencycode",
+    "Product_CompetitivePricing.CompetitivePrices_Price.LandedPrice.Amount": "competitiveprices_landedprice_amount",
+    "Product_CompetitivePricing.CompetitivePrices_Price.ListingPrice.CurrencyCode": "competitiveprices_listingprice_currencycode",
+    "Product_CompetitivePricing.CompetitivePrices_Price.ListingPrice.Amount": "competitiveprices_listingprice_amount",
+    "Product_CompetitivePricing.CompetitivePrices_Price.Shipping.CurrencyCode": "competitiveprices_shipping_currencycode",
+    "Product_CompetitivePricing.CompetitivePrices_Price.Shipping.Amount": "competitiveprices_shipping_amount",
+    "Product_CompetitivePricing.NumberOfOfferListings_condition": "competitiveprices_numberofofferlistings_condition",
+    "Product_CompetitivePricing.NumberOfOfferListings_Count": "competitiveprices_numberofofferlistings_count"
+}
+
+# column mapping ProductFees
+productfees_mapping = {
+    **global_mapping,
+    "CurrencyCode": "fees_currencycode",
+    "TotalFeesEstimateAmount": "fees_totalfeesestimateamount",
+    "ReferralFeeAmount": "fees_referralfeeamount",
+    "VariableClosingFeeAmount": "fees_variableclosingfeeamount",
+    "PerItemFeeAmount": "fees_peritemfeeamount"
+}
+
+# column mapping Orders
+orders_mapping = {
+    'order_AmazonOrderId': 'order_amazon_order_id',
+    'order_EarliestShipDate': 'order_earliest_ship_date',
+    'order_SalesChannel': 'order_sales_channel',
+    'order_OrderStatus': 'order_order_status',
+    'order_NumberOfItemsShipped': 'order_number_of_items_shipped',
+    'order_OrderType': 'order_order_type',
+    'order_IsPremiumOrder': 'order_is_premium_order',
+    'order_IsPrime': 'order_is_prime',
+    'order_FulfillmentChannel': 'order_fulfillment_channel',
+    'order_NumberOfItemsUnshipped': 'order_number_of_items_unshipped',
+    'order_HasRegulatedItems': 'order_has_regulated_items',
+    'order_IsReplacementOrder': 'order_is_replacement_order',
+    'order_IsSoldByAB': 'order_is_sold_by_ab',
+    'order_LatestShipDate': 'order_latest_ship_date',
+    'order_ShipServiceLevel': 'order_ship_service_level',
+    'order_IsISPU': 'order_is_ispu',
+    'order_MarketplaceId': 'order_marketplace_id',
+    'order_PurchaseDate': 'order_purchase_date',
+    'order_IsAccessPointOrder': 'order_is_access_point_order',
+    'order_SellerOrderId': 'order_seller_order_id',
+    'order_PaymentMethod': 'order_payment_method',
+    'order_IsBusinessOrder': 'order_is_business_order',
+    'order_PaymentMethodDetails': 'order_payment_method_details',
+    'order_IsGlobalExpressEnabled': 'order_is_global_express_enabled',
+    'order_LastUpdateDate': 'order_last_update_date',
+    'order_ShipmentServiceLevelCategory': 'order_shipment_service_level_category',
+    'order_BuyerInfo.BuyerEmail': 'order_buyer_info_buyer_email',
+    'order_ShippingAddress.PostalCode': 'order_shipping_address_postal_code',
+    'order_ShippingAddress.City': 'order_shipping_address_city',
+    'order_ShippingAddress.CountryCode': 'order_shipping_address_country_code',
+    'order_OrderTotal.CurrencyCode': 'order_order_total_currency_code',
+    'order_OrderTotal.Amount': 'order_order_total_amount',
+    'lineitem_QuantityShipped': 'lineitem_quantity_shipped',
+    'lineitem_ASIN': 'lineitem_asin',
+    'lineitem_SellerSKU': 'lineitem_seller_sku',
+    'lineitem_Title': 'lineitem_title',
+    'lineitem_IsGift': 'lineitem_is_gift',
+    'lineitem_IsTransparency': 'lineitem_is_transparency',
+    'lineitem_QuantityOrdered': 'lineitem_quantity_ordered',
+    'lineitem_OrderItemId': 'lineitem_order_item_id',
+    'lineitem_ProductInfo.NumberOfItems': 'lineitem_product_info_number_of_items',
+    'lineitem_PromotionIds': 'lineitem_promotion_ids',
+    'lineitem_ShippingTax.CurrencyCode': 'lineitem_shippingtax_currencycode',
+    'lineitem_ShippingTax.Amount': 'lineitem_shippingtax_amount',
+    'lineitem_ShippingPrice.CurrencyCode': 'lineitem_shippingprice_currencycode',
+    'lineitem_ShippingPrice.Amount': 'lineitem_shippingprice_amount',
+    'lineitem_ShippingDiscount.CurrencyCode': 'lineitem_shippingdiscount_currencycode',
+    'lineitem_ShippingDiscount.Amount': 'lineitem_shippingdiscount_amount',
+    'lineitem_ShippingDiscountTax.CurrencyCode': 'lineitem_shippingdiscounttax_currencycode',
+    'lineitem_ShippingDiscountTax.Amount': 'lineitem_shippingdiscounttax_amount',
+    'lineitem_ItemTax.CurrencyCode': 'lineitem_item_tax_currency_code',
+    'lineitem_ItemTax.Amount': 'lineitem_item_tax_amount',
+    'lineitem_ItemPrice.CurrencyCode': 'lineitem_item_price_currency_code',
+    'lineitem_ItemPrice.Amount': 'lineitem_item_price_amount',
+    'lineitem_PromotionDiscountTax.CurrencyCode': 'lineitem_promotion_discount_tax_currency_code',
+    'lineitem_PromotionDiscountTax.Amount': 'lineitem_promotion_discount_tax_amount',
+    'lineitem_PromotionDiscount.CurrencyCode': 'lineitem_promotion_discount_currency_code',
+    'lineitem_PromotionDiscount.Amount': 'lineitem_promotion_discount_amount',
+    'order_ShippingAddress.StateOrRegion': 'order_shipping_address_state_or_region',
+    'order_ShippingAddress.County': 'order_shipping_address_county',
+    'order_EarliestDeliveryDate': 'order_earliest_delivery_date',
+    'order_LatestDeliveryDate': 'order_latest_delivery_date',
+    'order_AutomatedShippingSettings.HasAutomatedShippingSettings': 'order_automatedshipsettings_hasautomatedshipsettings',
+    'order_AutomatedShippingSettings.AutomatedShipMethodName': 'order_automatedshipsettings_automatedshipmethodname',
+    'order_AutomatedShippingSettings.AutomatedCarrierName': 'order_aautomatedshipsettings_automatedcarriername',
+    'order_DefaultShipFromLocationAddress.AddressLine2': 'order_defaultshipfromlocationaddress_address_line2',
+    'order_DefaultShipFromLocationAddress.AddressLine1': 'order_defaultshipfromlocationaddress_address_line1',
+    'order_DefaultShipFromLocationAddress.Phone': 'order_defaultshipfromlocationaddress_phone',
+    'order_DefaultShipFromLocationAddress.PostalCode': 'order_defaultshipfromlocationaddress_postal_code',
+    'order_DefaultShipFromLocationAddress.City': 'order_defaultshipfromlocationaddresscity',
+    'order_DefaultShipFromLocationAddress.CountryCode': 'order_defaultshipfromlocationaddress_country_code',
+    'order_DefaultShipFromLocationAddress.Name': 'order_defaultshipfromlocationaddress_name',
+    'lineitem_ConditionSubtypeId': 'lineitem_condition_subtype_id',
+    'lineitem_ConditionId': 'lineitem_condition_id',
+    'lineitem_BuyerRequestedCancel.IsBuyerRequestedCancel': 'lineitem_buyer_requested_cancel_is_buyer_requested_cancel',
+    'lineitem_BuyerRequestedCancel.BuyerCancelReason': 'lineitem_buyer_requested_cancel_buyer_cancel_reason',
+    'lineitem_BuyerInfo.GiftWrapPrice.CurrencyCode': 'lineitem_buyer_info_giftwrap_price_currencycode',
+    'lineitem_BuyerInfo.GiftWrapPrice.Amount': 'lineitem_buyer_info_giftwrap_price_amount',
+    'lineitem_BuyerInfo.GiftWrapTax.CurrencyCode': 'lineitem_buyer_info_giftwrap_tax_currencycode',
+    'lineitem_BuyerInfo.GiftWrapTax.Amount': 'lineitem_buyer_info_giftwrap_tax_amount',
+    'lineitem_SerialNumberRequired': 'lineitem_serialnumber_required',
+}

@@ -1,0 +1,72 @@
+external:
+  host: voidsdb.c2wwnfcaisej.eu-central-1.rds.amazonaws.com
+  database: external
+  user: postgres
+  password: voids4thewin
+
+wefriends:
+  host: voidsdb.c2wwnfcaisej.eu-central-1.rds.amazonaws.com
+  database: wefriends
+  user: postgres
+  password: voids4thewin
+
+stoertebekker:
+  host: voidsdb.c2wwnfcaisej.eu-central-1.rds.amazonaws.com
+  database: stoertebekker
+  user: postgres
+  password: voids4thewin
+
+halalonline:
+  host: voidsdb.c2wwnfcaisej.eu-central-1.rds.amazonaws.com
+  database: halalonline
+  user: postgres
+  password: voids4thewin
+
+wwav:
+  host: voidsdb.c2wwnfcaisej.eu-central-1.rds.amazonaws.com
+  database: wwav
+  user: postgres
+  password: voids4thewin
+
+external-test:
+  host: nogl-dev.c2wwnfcaisej.eu-central-1.rds.amazonaws.com
+  database: external
+  user: postgres
+  password: voidsfortesting
+
+wefriends-test:
+  host: nogl-dev.c2wwnfcaisej.eu-central-1.rds.amazonaws.com
+  database: wefriends
+  user: postgres
+  password: voidsfortesting
+
+stoertebekker-test:
+  host: nogl-dev.c2wwnfcaisej.eu-central-1.rds.amazonaws.com
+  database: stoertebekker
+  user: postgres
+  password: voidsfortesting
+  
+fcb:
+  host: voidsdb.c2wwnfcaisej.eu-central-1.rds.amazonaws.com
+  database: fcb
+  user: postgres
+  password: voids4thewin
+  
+dogs-n-tiger:
+  host: voidsdb.c2wwnfcaisej.eu-central-1.rds.amazonaws.com
+  database: dogs-n-tiger
+  user: postgres
+  password: voids4thewin
+
+soccess:
+  host: voidsdb.c2wwnfcaisej.eu-central-1.rds.amazonaws.com
+  database: soccess
+  user: postgres
+  password: voids4thewin
+
+
+soccess-test:
+  host: nogl-dev.c2wwnfcaisej.eu-central-1.rds.amazonaws.com
+  database: soccess
+  user: postgres
+  password: voidsfortesting
