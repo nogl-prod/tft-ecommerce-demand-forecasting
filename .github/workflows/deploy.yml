@@ -65,6 +65,17 @@ jobs:
             echo "path=docker/Dockerfile.${{ matrix.component }}.base" >> $GITHUB_OUTPUT
           fi
       
+      - name: Set cache configuration
+        id: cache-config
+        run: |
+          if [ -n "${{ vars.DOCKER_REGISTRY_URL }}" ]; then
+            echo "cache-from=type=registry,ref=${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:buildcache" >> $GITHUB_OUTPUT
+            echo "cache-to=type=registry,ref=${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:buildcache,mode=max" >> $GITHUB_OUTPUT
+          else
+            echo "cache-from=type=local,src=/tmp/.buildx-cache" >> $GITHUB_OUTPUT
+            echo "cache-to=type=local,dest=/tmp/.buildx-cache,mode=max" >> $GITHUB_OUTPUT
+          fi
+      
       - name: Build Docker image
         id: build
         uses: docker/build-push-action@v4
@@ -75,8 +86,8 @@ jobs:
           tags: |
             ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:latest
             ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:${{ github.sha }}
-          cache-from: ${{ vars.DOCKER_REGISTRY_URL != '' && format('type=registry,ref={0}/{1}-{2}:buildcache', env.DOCKER_REGISTRY, env.IMAGE_PREFIX, matrix.component) || 'type=local,src=/tmp/.buildx-cache' }}
-          cache-to: ${{ vars.DOCKER_REGISTRY_URL != '' && format('type=registry,ref={0}/{1}-{2}:buildcache,mode=max', env.DOCKER_REGISTRY, env.IMAGE_PREFIX, matrix.component) || 'type=local,dest=/tmp/.buildx-cache,mode=max' }}
+          cache-from: ${{ steps.cache-config.outputs.cache-from }}
+          cache-to: ${{ steps.cache-config.outputs.cache-to }}
           build-args: |
             PYTHON_VERSION=${{ env.PYTHON_VERSION }}
       
