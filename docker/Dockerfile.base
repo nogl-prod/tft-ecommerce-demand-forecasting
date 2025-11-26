@@ -44,7 +44,7 @@ RUN useradd -m -u 1000 appuser && \
 WORKDIR /workspace
 
 # Copy entrypoint script
-COPY entrypoint.sh /entrypoint.sh
+COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 # Switch to non-root user

@@ -56,12 +56,21 @@ jobs:
             -u ${{ secrets.DOCKER_REGISTRY_USERNAME }} \
             --password-stdin
       
+      - name: Set Dockerfile path
+        id: dockerfile
+        run: |
+          if [ "${{ matrix.component }}" == "base" ]; then
+            echo "path=docker/Dockerfile.base" >> $GITHUB_OUTPUT
+          else
+            echo "path=docker/Dockerfile.${{ matrix.component }}.base" >> $GITHUB_OUTPUT
+          fi
+      
       - name: Build Docker image
         id: build
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: ${{ matrix.component == 'base' && 'docker/Dockerfile.base' || format('docker/Dockerfile.{0}.base', matrix.component) }}
+          file: ${{ steps.dockerfile.outputs.path }}
           push: ${{ vars.DOCKER_REGISTRY_URL != '' }}
           tags: |
             ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:latest
