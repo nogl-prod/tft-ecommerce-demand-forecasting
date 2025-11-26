@@ -83,6 +83,7 @@ jobs:
           context: .
           file: ${{ steps.dockerfile.outputs.path }}
           push: ${{ vars.DOCKER_REGISTRY_URL != '' }}
+          load: ${{ vars.DOCKER_REGISTRY_URL == '' }}
           tags: |
             ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:latest
             ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:${{ github.sha }}
