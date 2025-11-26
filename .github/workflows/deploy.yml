@@ -167,13 +167,21 @@ jobs:
       - name: Verify upload
         run: |
           echo "Verifying upload..."
-          aws s3 ls s3://${{ vars.GARAGE_CODE_BUCKET }}/code-${GITHUB_SHA}.tar.gz \
+          # Use cp to /dev/null instead of ls (doesn't require List permission)
+          # This method is already proven to work with Garage in validation job
+          aws s3 cp \
+            s3://${{ vars.GARAGE_CODE_BUCKET }}/code-${GITHUB_SHA}.tar.gz \
+            /dev/null \
             --endpoint-url ${{ secrets.GARAGE_ENDPOINT }} \
-            --region ${{ secrets.GARAGE_REGION }}
+            --region ${{ secrets.GARAGE_REGION }} || exit 1
           
-          aws s3 ls s3://${{ vars.GARAGE_CODE_BUCKET }}/code-latest.tar.gz \
+          aws s3 cp \
+            s3://${{ vars.GARAGE_CODE_BUCKET }}/code-latest.tar.gz \
+            /dev/null \
             --endpoint-url ${{ secrets.GARAGE_ENDPOINT }} \
-            --region ${{ secrets.GARAGE_REGION }}
+            --region ${{ secrets.GARAGE_REGION }} || exit 1
+          
+          echo "✅ Upload verification successful"
 
   # Job 3: Validation
   validate:
