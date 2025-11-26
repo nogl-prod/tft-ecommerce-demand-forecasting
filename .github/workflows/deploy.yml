@@ -366,5 +366,3 @@ jobs:
           pip install flake8 black
           # Check Python files (if any in root)
           find . -name "*.py" -not -path "./.git/*" -not -path "./__pycache__/*" | head -5 | xargs flake8 --max-line-length=100 --ignore=E501,W503 || true
-
-tested ?
