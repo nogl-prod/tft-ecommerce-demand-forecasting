@@ -92,12 +92,23 @@ jobs:
           build-args: |
             PYTHON_VERSION=${{ env.PYTHON_VERSION }}
       
+      - name: Set Trivy image reference
+        id: trivy-image
+        run: |
+          if [ -n "${{ vars.DOCKER_REGISTRY_URL }}" ]; then
+            # Registry configured - use registry image
+            echo "image-ref=${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:${{ github.sha }}" >> $GITHUB_OUTPUT
+          else
+            # No registry - use local Docker image with docker:// prefix
+            echo "image-ref=docker://${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:${{ github.sha }}" >> $GITHUB_OUTPUT
+          fi
+      
       - name: Run Trivy vulnerability scanner
         id: trivy-scan
         if: steps.build.outcome == 'success'
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:${{ github.sha }}
+          image-ref: ${{ steps.trivy-image.outputs.image-ref }}
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
