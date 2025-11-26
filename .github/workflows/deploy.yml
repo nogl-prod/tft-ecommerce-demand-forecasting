@@ -45,6 +45,34 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
       
+      - name: Free up disk space
+        run: |
+          echo "=== Disk space before cleanup ==="
+          df -h
+          
+          # Clean up Docker resources
+          echo "Cleaning up Docker..."
+          docker system prune -af --volumes || true
+          docker buildx prune -af || true
+          
+          # Clean up temporary files
+          echo "Cleaning up temp files..."
+          sudo rm -rf /tmp/* /var/tmp/* || true
+          
+          # Clean up apt cache
+          sudo apt-get clean || true
+          sudo rm -rf /var/lib/apt/lists/* || true
+          
+          # Clean up pip cache
+          pip cache purge || true
+          
+          # Remove old logs
+          sudo journalctl --vacuum-time=1d || true
+          
+          echo "=== Disk space after cleanup ==="
+          df -h
+          echo "Available space: $(df -h / | tail -1 | awk '{print $4}')"
+      
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       
@@ -72,8 +100,10 @@ jobs:
             echo "cache-from=type=registry,ref=${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:buildcache" >> $GITHUB_OUTPUT
             echo "cache-to=type=registry,ref=${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:buildcache,mode=max" >> $GITHUB_OUTPUT
           else
-            echo "cache-from=type=local,src=/tmp/.buildx-cache" >> $GITHUB_OUTPUT
-            echo "cache-to=type=local,dest=/tmp/.buildx-cache,mode=max" >> $GITHUB_OUTPUT
+            # Use GitHub Actions cache (gha) to avoid using local disk space
+            # This requires GITHUB_TOKEN which is automatically available
+            echo "cache-from=type=gha" >> $GITHUB_OUTPUT
+            echo "cache-to=type=gha,mode=max" >> $GITHUB_OUTPUT
           fi
       
       - name: Set Docker image tags
@@ -88,6 +118,12 @@ jobs:
             echo "tag1=${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:latest" >> $GITHUB_OUTPUT
             echo "tag2=${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:${{ github.sha }}" >> $GITHUB_OUTPUT
           fi
+      
+      - name: Check disk space before build
+        run: |
+          echo "=== Disk space before build ==="
+          df -h
+          echo "Available: $(df -h / | tail -1 | awk '{print $4}')"
       
       - name: Build Docker image
         id: build
@@ -104,6 +140,15 @@ jobs:
           cache-to: ${{ steps.cache-config.outputs.cache-to }}
           build-args: |
             PYTHON_VERSION=${{ env.PYTHON_VERSION }}
+      
+      - name: Clean up after build
+        if: always()
+        run: |
+          echo "=== Disk space after build ==="
+          df -h
+          # Clean up build cache to free space for next component
+          docker buildx prune -f || true
+          echo "Available: $(df -h / | tail -1 | awk '{print $4}')"
       
       - name: Set Trivy image reference
         id: trivy-image
@@ -322,3 +367,4 @@ jobs:
           # Check Python files (if any in root)
           find . -name "*.py" -not -path "./.git/*" -not -path "./__pycache__/*" | head -5 | xargs flake8 --max-line-length=100 --ignore=E501,W503 || true
 
+tested ?
