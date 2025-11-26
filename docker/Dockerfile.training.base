@@ -1,7 +1,7 @@
 # Training-specific base image
 # Extends the base image with training-specific dependencies
 
-FROM python:3.8-slim as base
+FROM python:3.8-slim AS base
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
