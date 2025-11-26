@@ -247,7 +247,18 @@ jobs:
             --region ${{ secrets.GARAGE_REGION }}
           
           # Verify checksum
-          sha256sum -c /tmp/test-code.tar.gz.sha256 || exit 1
+          # Extract expected checksum from file (format: "hash  filename")
+          EXPECTED_CHECKSUM=$(awk '{print $1}' /tmp/test-code.tar.gz.sha256)
+          # Compute actual checksum
+          ACTUAL_CHECKSUM=$(sha256sum /tmp/test-code.tar.gz | awk '{print $1}')
+          # Compare checksums
+          if [ "$EXPECTED_CHECKSUM" != "$ACTUAL_CHECKSUM" ]; then
+            echo "❌ Checksum mismatch!"
+            echo "Expected: $EXPECTED_CHECKSUM"
+            echo "Actual:   $ACTUAL_CHECKSUM"
+            exit 1
+          fi
+          echo "✅ Checksum verification successful"
           
           # Test extraction
           mkdir -p /tmp/test-extract
