@@ -26,7 +26,7 @@ black==21.12b0
 bleach==4.1.0
 blinker==1.4
 botocore==1.24.21
-boto3
+boto3==1.24.21
 branca==0.4.2
 cachetools==4.2.4
 category-encoders==2.3.0
