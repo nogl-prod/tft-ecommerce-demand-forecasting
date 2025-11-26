@@ -16,7 +16,7 @@ on:
       rebuild_images:
         description: 'Force rebuild Docker images'
         required: false
-        default: 'false'
+        default: false
         type: boolean
 
 env:
@@ -57,30 +57,33 @@ jobs:
             --password-stdin
       
       - name: Build Docker image
+        id: build
         uses: docker/build-push-action@v4
         with:
           context: .
           file: docker/Dockerfile.${{ matrix.component }}.base
           push: ${{ vars.DOCKER_REGISTRY_URL != '' }}
           tags: |
-            ${{ vars.DOCKER_REGISTRY_URL }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:latest
-            ${{ vars.DOCKER_REGISTRY_URL }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:${{ github.sha }}
-          cache-from: type=registry,ref=${{ vars.DOCKER_REGISTRY_URL }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:buildcache
-          cache-to: type=registry,ref=${{ vars.DOCKER_REGISTRY_URL }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:buildcache,mode=max
+            ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:latest
+            ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:${{ github.sha }}
+          cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:buildcache
+          cache-to: type=registry,ref=${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:buildcache,mode=max
           build-args: |
             PYTHON_VERSION=${{ env.PYTHON_VERSION }}
       
       - name: Run Trivy vulnerability scanner
+        id: trivy-scan
+        if: steps.build.outcome == 'success'
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ vars.DOCKER_REGISTRY_URL }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:${{ github.sha }}
+          image-ref: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:${{ github.sha }}
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
       
       - name: Upload Trivy results
-        uses: github/codeql-action/upload-sarif@v2
-        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && steps.trivy-scan.outcome == 'success'
         with:
           sarif_file: 'trivy-results.sarif'
 
