@@ -61,7 +61,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: docker/Dockerfile.${{ matrix.component }}.base
+          file: ${{ matrix.component == 'base' && 'docker/Dockerfile.base' || format('docker/Dockerfile.{0}.base', matrix.component) }}
           push: ${{ vars.DOCKER_REGISTRY_URL != '' }}
           tags: |
             ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:latest
