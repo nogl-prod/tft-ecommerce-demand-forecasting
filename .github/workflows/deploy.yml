@@ -75,8 +75,8 @@ jobs:
           tags: |
             ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:latest
             ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:${{ github.sha }}
-          cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:buildcache
-          cache-to: type=registry,ref=${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:buildcache,mode=max
+          cache-from: ${{ vars.DOCKER_REGISTRY_URL != '' && format('type=registry,ref={0}/{1}-{2}:buildcache', env.DOCKER_REGISTRY, env.IMAGE_PREFIX, matrix.component) || 'type=local,src=/tmp/.buildx-cache' }}
+          cache-to: ${{ vars.DOCKER_REGISTRY_URL != '' && format('type=registry,ref={0}/{1}-{2}:buildcache,mode=max', env.DOCKER_REGISTRY, env.IMAGE_PREFIX, matrix.component) || 'type=local,dest=/tmp/.buildx-cache,mode=max' }}
           build-args: |
             PYTHON_VERSION=${{ env.PYTHON_VERSION }}
       
