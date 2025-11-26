@@ -76,6 +76,19 @@ jobs:
             echo "cache-to=type=local,dest=/tmp/.buildx-cache,mode=max" >> $GITHUB_OUTPUT
           fi
       
+      - name: Set Docker image tags
+        id: image-tags
+        run: |
+          if [ -n "${{ vars.DOCKER_REGISTRY_URL }}" ]; then
+            # Registry configured
+            echo "tag1=${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:latest" >> $GITHUB_OUTPUT
+            echo "tag2=${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:${{ github.sha }}" >> $GITHUB_OUTPUT
+          else
+            # No registry - simple tags
+            echo "tag1=${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:latest" >> $GITHUB_OUTPUT
+            echo "tag2=${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:${{ github.sha }}" >> $GITHUB_OUTPUT
+          fi
+      
       - name: Build Docker image
         id: build
         uses: docker/build-push-action@v4
@@ -85,8 +98,8 @@ jobs:
           push: ${{ vars.DOCKER_REGISTRY_URL != '' }}
           load: ${{ vars.DOCKER_REGISTRY_URL == '' }}
           tags: |
-            ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:latest
-            ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:${{ github.sha }}
+            ${{ steps.image-tags.outputs.tag1 }}
+            ${{ steps.image-tags.outputs.tag2 }}
           cache-from: ${{ steps.cache-config.outputs.cache-from }}
           cache-to: ${{ steps.cache-config.outputs.cache-to }}
           build-args: |
@@ -95,13 +108,7 @@ jobs:
       - name: Set Trivy image reference
         id: trivy-image
         run: |
-          if [ -n "${{ vars.DOCKER_REGISTRY_URL }}" ]; then
-            # Registry configured - use registry image
-            echo "image-ref=${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:${{ github.sha }}" >> $GITHUB_OUTPUT
-          else
-            # No registry - use local Docker image with docker:// prefix
-            echo "image-ref=docker://${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:${{ github.sha }}" >> $GITHUB_OUTPUT
-          fi
+          echo "image-ref=${{ steps.image-tags.outputs.tag2 }}" >> $GITHUB_OUTPUT
       
       - name: Run Trivy vulnerability scanner
         id: trivy-scan
@@ -112,6 +119,7 @@ jobs:
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
+          scanners: 'vuln'
       
       - name: Upload Trivy results
         uses: github/codeql-action/upload-sarif@v3
