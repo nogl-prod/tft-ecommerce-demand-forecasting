@@ -1,0 +1,55 @@
+# Multi-stage Dockerfile for base image with dependencies only
+# This image contains all Python dependencies but no application code
+# Code will be downloaded from Garage at runtime
+
+# Stage 1: Build stage (for compiling dependencies if needed)
+FROM python:3.8-slim as builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    make \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install Python packages
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir --user -r /tmp/requirements.txt
+
+# Stage 2: Runtime stage (minimal image)
+FROM python:3.8-slim
+
+# Install runtime dependencies and AWS CLI for Garage access
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    tar \
+    gzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install AWS CLI for S3-compatible Garage access
+RUN pip install --no-cache-dir awscli
+
+# Copy Python packages from builder stage
+COPY --from=builder /root/.local /root/.local
+
+# Make sure scripts in .local are usable
+ENV PATH=/root/.local/bin:$PATH
+
+# Create non-root user for security
+RUN useradd -m -u 1000 appuser && \
+    mkdir -p /workspace /workspace/code && \
+    chown -R appuser:appuser /workspace
+
+# Set working directory
+WORKDIR /workspace
+
+# Copy entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Switch to non-root user
+USER appuser
+
+# Set entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
+

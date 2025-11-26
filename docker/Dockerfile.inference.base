@@ -1,0 +1,37 @@
+# Inference-specific base image
+# Extends the base image with inference-specific dependencies
+
+FROM python:3.8-slim as base
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    tar \
+    gzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install AWS CLI and MLflow
+RUN pip install --no-cache-dir \
+    awscli \
+    mlflow \
+    boto3
+
+# Copy requirements and install inference dependencies
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser && \
+    mkdir -p /workspace /workspace/code && \
+    chown -R appuser:appuser /workspace
+
+WORKDIR /workspace
+
+# Copy entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+USER appuser
+
+ENTRYPOINT ["/entrypoint.sh"]
+

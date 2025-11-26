@@ -11,7 +11,17 @@ from pytorch_forecasting import TemporalFusionTransformer
 from pytorch_forecasting.metrics import QuantileLoss
 import boto3
 import mlflow
-mlflow.set_tracking_uri("http://3.74.207.5:80")
+
+# Configure Garage for MLflow artifacts
+os.environ.setdefault('MLFLOW_S3_ENDPOINT_URL', os.getenv('MLFLOW_S3_ENDPOINT_URL', 'http://192.168.29.163:3900'))
+os.environ.setdefault('AWS_ACCESS_KEY_ID', os.getenv('AWS_ACCESS_KEY_ID', ''))
+os.environ.setdefault('AWS_SECRET_ACCESS_KEY', os.getenv('AWS_SECRET_ACCESS_KEY', ''))
+os.environ.setdefault('AWS_DEFAULT_REGION', os.getenv('AWS_DEFAULT_REGION', 'garage'))
+
+# Set MLflow tracking URI (defaults to environment variable or localhost)
+mlflow_tracking_uri = os.getenv('MLFLOW_TRACKING_URI', 'http://192.168.29.100:5000')
+mlflow.set_tracking_uri(mlflow_tracking_uri)
+
 from tempfile import NamedTemporaryFile
 # Set up logging to output to console
 logging.basicConfig(

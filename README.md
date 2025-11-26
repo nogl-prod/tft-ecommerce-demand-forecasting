@@ -28,10 +28,56 @@ This project provides an end-to-end solution for e-commerce demand forecasting:
 
 ## Architecture
 
-The system follows a modular architecture:
+The system follows a modular architecture with a hybrid deployment pattern:
 
 ```
 Data Sources → Data Transformation → Data Consolidation → Model Training → Inference → Evaluation
+```
+
+### Deployment Architecture
+
+The project uses a **hybrid deployment pattern** that combines:
+- **Base Docker images**: Contain all dependencies (Python packages, system tools)
+- **Dynamic code download**: Application code downloaded from Garage at runtime
+- **CI/CD automation**: Automated builds and deployments via GitHub Actions
+
+```
+┌─────────────────┐
+│  GitHub Push    │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────────────────────────┐
+│     GitHub Actions CI/CD            │
+│  ┌───────────────────────────────┐  │
+│  │ Build Base Docker Images      │  │
+│  │ (only when deps change)       │  │
+│  └───────────┬───────────────────┘  │
+│              │                       │
+│  ┌───────────▼───────────────────┐  │
+│  │ Package & Upload Code         │  │
+│  │ to Garage (always)            │  │
+│  └───────────┬───────────────────┘  │
+└──────────────┼───────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────┐
+│         Garage Storage              │
+│  - code-repository/                │
+│  - code-<SHA>.tar.gz              │
+│  - code-latest.tar.gz              │
+└──────────────┬───────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────┐
+│      Airflow DAG Execution         │
+│  ┌───────────────────────────────┐  │
+│  │ DockerOperator                │  │
+│  │ 1. Pull base image            │  │
+│  │ 2. Download code from Garage │  │
+│  │ 3. Execute training/inference │  │
+│  └───────────────────────────────┘  │
+└──────────────────────────────────────┘
 ```
 
 ### Key Components
@@ -39,9 +85,10 @@ Data Sources → Data Transformation → Data Consolidation → Model Training �
 1. **Data Sourcing**: Collects data from various e-commerce platforms and external sources
 2. **Data Transformation**: Transforms raw data into a format suitable for ML models
 3. **Data Consolidation**: Merges data from multiple sources
-4. **Training**: Trains TFT models on historical data
+4. **Training**: Trains TFT models on historical data with MLflow tracking
 5. **Inference**: Generates forecasts for future demand
 6. **Evaluation**: Assesses model performance using various metrics
+7. **Orchestration**: Airflow DAGs manage the entire pipeline
 
 ## Features
 
@@ -50,8 +97,10 @@ Data Sources → Data Transformation → Data Consolidation → Model Training �
 - **Quantile Predictions**: Provides uncertainty estimates (q0-q6 quantiles)
 - **Multi-client Support**: Handles multiple e-commerce clients
 - **Demand Shaping**: Bundle demand shaping capabilities
-- **AWS Integration**: Deployed on AWS SageMaker, RDS, and S3
-- **Airflow Orchestration**: Automated workflows for data processing and model training
+- **Hybrid Deployment**: Base Docker images + dynamic code download from Garage
+- **MLflow Integration**: Model versioning and artifact storage with Garage
+- **Airflow Orchestration**: Automated workflows using DockerOperator
+- **CI/CD Pipeline**: Automated builds and deployments via GitHub Actions
 
 ## Installation
 
@@ -141,6 +190,10 @@ AWS_DEFAULT_REGION=eu-central-1
 ### MLflow Configuration
 ```bash
 MLFLOW_TRACKING_URI=http://your-mlflow-server:port
+MLFLOW_S3_ENDPOINT_URL=http://garage-endpoint:3900  # Garage endpoint for artifacts
+AWS_ACCESS_KEY_ID=your_garage_access_key
+AWS_SECRET_ACCESS_KEY=your_garage_secret_key
+AWS_DEFAULT_REGION=garage
 ```
 
 ### External API Keys
@@ -158,7 +211,9 @@ DEV_DB_PASSWORD=your_dev_database_password
 
 ## Usage
 
-### Training a Model
+### Local Development
+
+#### Training a Model
 
 ```bash
 python Training/training_script.py \
@@ -169,13 +224,13 @@ python Training/training_script.py \
     --trainer_max_epochs 5
 ```
 
-### Running Inference
+#### Running Inference
 
 ```bash
 python Inference/03_Inference.py --client_name wefriends
 ```
 
-### Evaluation
+#### Evaluation
 
 ```bash
 python Evaluation/_result.py \
@@ -185,6 +240,29 @@ python Evaluation/_result.py \
     --y_true_col lineitems_quantity \
     --y_pred_col VOIDS_forecast_q3
 ```
+
+### Production Deployment (Hybrid Pattern)
+
+The project uses a hybrid deployment pattern with Airflow and Garage. See [Deployment Guide](docs/deployment.md) for detailed instructions.
+
+#### Quick Start
+
+1. **Configure GitHub Secrets and Variables** (see [Deployment Guide](docs/deployment.md))
+2. **Configure Airflow Variables** (see [Deployment Guide](docs/deployment.md))
+3. **Trigger DAGs** via Airflow UI with configuration:
+   ```json
+   {
+     "client_name": "wefriends",
+     "code_version": "latest"
+   }
+   ```
+
+#### Available DAGs
+
+- `tft_model_training` - Train TFT models
+- `tft_model_inference` - Generate forecasts
+- `data_transformation` - Transform data from multiple sources
+- `data_consolidation` - Consolidate transformed data
 
 ## Project Structure
 
@@ -201,13 +279,32 @@ python Evaluation/_result.py \
 │   └── tests/                 # Unit tests
 ├── Evaluation/                 # Model evaluation metrics and scripts
 ├── Demand Shaping/            # Demand shaping functionality
-├── backup_dags/               # Airflow DAGs for orchestration
+├── dags/                      # Airflow DAGs (hybrid deployment pattern)
+│   ├── training_pipeline.py   # Training DAG
+│   ├── inference_pipeline.py  # Inference DAG
+│   ├── data_transformation_pipeline.py  # Data transformation DAG
+│   └── utils/                 # DAG utilities
+│       ├── docker_helpers.py  # DockerOperator helper functions
+│       └── monitoring.py      # Monitoring utilities
+├── docker/                     # Docker configuration
+│   ├── Dockerfile.base        # Base image with dependencies
+│   ├── Dockerfile.training.base    # Training-specific image
+│   ├── Dockerfile.inference.base   # Inference-specific image
+│   ├── Dockerfile.transformation.base  # Transformation-specific image
+│   └── entrypoint.sh          # Code download entrypoint script
+├── docs/                      # Documentation
+│   └── deployment.md          # Deployment guide
+├── backup_dags/               # Legacy Airflow DAGs (SageMaker)
+├── .github/
+│   └── workflows/
+│       ├── deploy.yml         # CI/CD workflow (hybrid pattern)
+│       └── main.yml           # Legacy workflow
 ├── configAWSRDS.py            # Database configuration helper
 ├── Support_Functions.py       # Shared utility functions
 ├── static_variables.py        # Static variables (uses env vars)
 ├── defines.py                 # Event definitions and constants
 ├── requirements.txt           # Python dependencies
-└── Dockerfile                 # Docker configuration for SageMaker
+└── Dockerfile                 # Legacy Dockerfile (SageMaker)
 ```
 
 ### Key Files
@@ -238,13 +335,49 @@ The project uses environment variables for sensitive configuration. Required var
 
 See `.env.example` for a complete template (note: `.env.example` may be blocked by gitignore, but the structure is documented in the template files).
 
+## Deployment
+
+### Hybrid Deployment Pattern
+
+This project uses a hybrid deployment pattern that combines:
+- **Base Docker images**: Contain all dependencies, rebuilt only when dependencies change
+- **Dynamic code download**: Application code downloaded from Garage at runtime
+- **CI/CD automation**: Automated builds and deployments via GitHub Actions
+
+**Benefits:**
+- Fast code updates (no image rebuilds needed)
+- Stable base images (dependencies cached)
+- Version control for code deployments
+- Efficient resource usage
+
+For detailed deployment instructions, see [Deployment Guide](docs/deployment.md).
+
+### CI/CD Pipeline
+
+The GitHub Actions workflow (`.github/workflows/deploy.yml`) automatically:
+1. Builds Docker base images when dependencies change
+2. Packages and uploads code to Garage on every push
+3. Validates deployments
+4. Scans images for security vulnerabilities
+
+### Airflow DAGs
+
+DAGs are located in the `dags/` directory:
+- Use DockerOperator for task execution
+- Download code from Garage at runtime
+- Support versioned code deployments
+- Include comprehensive error handling and retries
+
 ## Security Best Practices
 
 1. **Never commit credentials**: All sensitive data should be in environment variables or excluded files
 2. **Use template files**: Copy `.example` files and fill in your values locally
 3. **Review .gitignore**: Ensure sensitive files are excluded
 4. **Rotate credentials**: Regularly update API keys and passwords
-5. **Use AWS Secrets Manager**: For production deployments, consider using AWS Secrets Manager
+5. **Use Airflow Variables**: Store secrets in Airflow Variables (encrypted)
+6. **Least privilege**: Use separate access keys for CI/CD and runtime
+7. **Image scanning**: Docker images are automatically scanned for vulnerabilities
+8. **Non-root containers**: All containers run as non-root users
 
 ## Contributing
 

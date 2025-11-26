@@ -1,0 +1,226 @@
+name: Deploy to Garage - Hybrid Pattern
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'requirements.txt'
+      - 'docker/**'
+      - 'Training/**'
+      - 'Inference/**'
+      - 'Data Source Transformations/**'
+      - 'Data Finalisation/**'
+      - 'Data Sourcing/**'
+  workflow_dispatch:
+    inputs:
+      rebuild_images:
+        description: 'Force rebuild Docker images'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  PYTHON_VERSION: '3.8'
+  DOCKER_REGISTRY: ${{ vars.DOCKER_REGISTRY_URL || 'localhost:5000' }}
+  IMAGE_PREFIX: 'tft-demand-forecasting'
+
+jobs:
+  # Job 1: Build Base Docker Images
+  build-images:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' && (
+        contains(github.event.head_commit.modified, 'requirements.txt') ||
+        contains(github.event.head_commit.modified, 'docker/') ||
+        github.event.inputs.rebuild_images == 'true'
+      )
+    
+    strategy:
+      matrix:
+        component: [base, training, inference, transformation]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Login to Container Registry
+        if: vars.DOCKER_REGISTRY_URL != ''
+        run: |
+          echo "${{ secrets.DOCKER_REGISTRY_PASSWORD }}" | docker login \
+            ${{ vars.DOCKER_REGISTRY_URL }} \
+            -u ${{ secrets.DOCKER_REGISTRY_USERNAME }} \
+            --password-stdin
+      
+      - name: Build Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: docker/Dockerfile.${{ matrix.component }}.base
+          push: ${{ vars.DOCKER_REGISTRY_URL != '' }}
+          tags: |
+            ${{ vars.DOCKER_REGISTRY_URL }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:latest
+            ${{ vars.DOCKER_REGISTRY_URL }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:${{ github.sha }}
+          cache-from: type=registry,ref=${{ vars.DOCKER_REGISTRY_URL }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:buildcache
+          cache-to: type=registry,ref=${{ vars.DOCKER_REGISTRY_URL }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:buildcache,mode=max
+          build-args: |
+            PYTHON_VERSION=${{ env.PYTHON_VERSION }}
+      
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ vars.DOCKER_REGISTRY_URL }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:${{ github.sha }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+      
+      - name: Upload Trivy results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # Job 2: Package and Upload Code to Garage
+  package-and-upload:
+    name: Package and Upload Code
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Install AWS CLI
+        run: |
+          pip install awscli
+      
+      - name: Configure AWS CLI for Garage
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.GARAGE_CICD_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.GARAGE_CICD_SECRET_ACCESS_KEY }}
+          aws configure set default.region ${{ secrets.GARAGE_REGION }}
+      
+      - name: Create code archive
+        run: |
+          tar -czf code-${GITHUB_SHA}.tar.gz \
+            --exclude='.git' \
+            --exclude='__pycache__' \
+            --exclude='*.pyc' \
+            --exclude='.github' \
+            --exclude='*.xlsx' \
+            --exclude='*.xls' \
+            --exclude='*.csv' \
+            --exclude='*.ipynb' \
+            --exclude='*.ipynb_checkpoints' \
+            --exclude='backup_dags' \
+            --exclude='.env' \
+            --exclude='*.ini' \
+            --exclude='*.json' \
+            --exclude='01_Data Source Keys' \
+            "Data Sourcing/" \
+            "Data Source Transformations/" \
+            "Data Finalisation/" \
+            Training/ \
+            Inference/ \
+            Evaluation/ \
+            "Demand Shaping/" \
+            *.py \
+            requirements.txt \
+            configAWSRDS.py \
+            defines.py \
+            static_variables.py \
+            Support_Functions.py
+          
+          # Calculate checksum
+          sha256sum code-${GITHUB_SHA}.tar.gz > code-${GITHUB_SHA}.tar.gz.sha256
+          echo "Archive size: $(du -h code-${GITHUB_SHA}.tar.gz | cut -f1)"
+      
+      - name: Upload code to Garage (versioned)
+        run: |
+          aws s3 cp code-${GITHUB_SHA}.tar.gz \
+            s3://${{ vars.GARAGE_CODE_BUCKET }}/code-${GITHUB_SHA}.tar.gz \
+            --endpoint-url ${{ secrets.GARAGE_ENDPOINT }} \
+            --region ${{ secrets.GARAGE_REGION }}
+          
+          # Upload checksum
+          aws s3 cp code-${GITHUB_SHA}.tar.gz.sha256 \
+            s3://${{ vars.GARAGE_CODE_BUCKET }}/code-${GITHUB_SHA}.tar.gz.sha256 \
+            --endpoint-url ${{ secrets.GARAGE_ENDPOINT }} \
+            --region ${{ secrets.GARAGE_REGION }}
+      
+      - name: Update latest pointer
+        run: |
+          aws s3 cp code-${GITHUB_SHA}.tar.gz \
+            s3://${{ vars.GARAGE_CODE_BUCKET }}/code-latest.tar.gz \
+            --endpoint-url ${{ secrets.GARAGE_ENDPOINT }} \
+            --region ${{ secrets.GARAGE_REGION }}
+          
+          # Update latest checksum
+          aws s3 cp code-${GITHUB_SHA}.tar.gz.sha256 \
+            s3://${{ vars.GARAGE_CODE_BUCKET }}/code-latest.tar.gz.sha256 \
+            --endpoint-url ${{ secrets.GARAGE_ENDPOINT }} \
+            --region ${{ secrets.GARAGE_REGION }}
+      
+      - name: Verify upload
+        run: |
+          echo "Verifying upload..."
+          aws s3 ls s3://${{ vars.GARAGE_CODE_BUCKET }}/code-${GITHUB_SHA}.tar.gz \
+            --endpoint-url ${{ secrets.GARAGE_ENDPOINT }} \
+            --region ${{ secrets.GARAGE_REGION }}
+          
+          aws s3 ls s3://${{ vars.GARAGE_CODE_BUCKET }}/code-latest.tar.gz \
+            --endpoint-url ${{ secrets.GARAGE_ENDPOINT }} \
+            --region ${{ secrets.GARAGE_REGION }}
+
+  # Job 3: Validation
+  validate:
+    name: Validate Deployment
+    runs-on: ubuntu-latest
+    needs: [package-and-upload]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Install AWS CLI
+        run: pip install awscli
+      
+      - name: Configure AWS CLI for Garage
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.GARAGE_CICD_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.GARAGE_CICD_SECRET_ACCESS_KEY }}
+          aws configure set default.region ${{ secrets.GARAGE_REGION }}
+      
+      - name: Validate code archive
+        run: |
+          # Download and verify checksum
+          aws s3 cp \
+            s3://${{ vars.GARAGE_CODE_BUCKET }}/code-${GITHUB_SHA}.tar.gz \
+            /tmp/test-code.tar.gz \
+            --endpoint-url ${{ secrets.GARAGE_ENDPOINT }} \
+            --region ${{ secrets.GARAGE_REGION }}
+          
+          aws s3 cp \
+            s3://${{ vars.GARAGE_CODE_BUCKET }}/code-${GITHUB_SHA}.tar.gz.sha256 \
+            /tmp/test-code.tar.gz.sha256 \
+            --endpoint-url ${{ secrets.GARAGE_ENDPOINT }} \
+            --region ${{ secrets.GARAGE_REGION }}
+          
+          # Verify checksum
+          sha256sum -c /tmp/test-code.tar.gz.sha256 || exit 1
+          
+          # Test extraction
+          mkdir -p /tmp/test-extract
+          tar -tzf /tmp/test-code.tar.gz > /dev/null || exit 1
+          
+          echo "✅ Code archive validation successful"
+      
+      - name: Run linting
+        run: |
+          pip install flake8 black
+          # Check Python files (if any in root)
+          find . -name "*.py" -not -path "./.git/*" -not -path "./__pycache__/*" | head -5 | xargs flake8 --max-line-length=100 --ignore=E501,W503 || true
+

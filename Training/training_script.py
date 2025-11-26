@@ -14,6 +14,18 @@ from pytorch_lightning.callbacks import EarlyStopping, LearningRateMonitor
 from pytorch_lightning.loggers import TensorBoardLogger
 import torch
 import boto3
+import mlflow
+import mlflow.pytorch
+
+# Configure Garage for MLflow artifacts
+os.environ.setdefault('MLFLOW_S3_ENDPOINT_URL', os.getenv('MLFLOW_S3_ENDPOINT_URL', 'http://192.168.29.163:3900'))
+os.environ.setdefault('AWS_ACCESS_KEY_ID', os.getenv('AWS_ACCESS_KEY_ID', ''))
+os.environ.setdefault('AWS_SECRET_ACCESS_KEY', os.getenv('AWS_SECRET_ACCESS_KEY', ''))
+os.environ.setdefault('AWS_DEFAULT_REGION', os.getenv('AWS_DEFAULT_REGION', 'garage'))
+
+# Set MLflow tracking URI
+mlflow_tracking_uri = os.getenv('MLFLOW_TRACKING_URI', 'http://192.168.29.100:5000')
+mlflow.set_tracking_uri(mlflow_tracking_uri)
 
 from pytorch_forecasting import Baseline, TemporalFusionTransformer, TimeSeriesDataSet
 from pytorch_forecasting.data import GroupNormalizer, MultiNormalizer
@@ -201,22 +213,42 @@ def model(args, train_dataloader, val_dataloader):
     
     print('START Training')
     
-    ### Updated by Arda ####
-    from datetime import datetime, date, timedelta
-    today = date.today()
-    today = str(today).split("-")
-    today = today[0] + today[1] + today[2]
-    checkpoint_callback = ModelCheckpoint(
-        save_top_k = 1,
-        verbose = False,
-        mode = "min",
-        monitor = "val_loss",
-        dirpath = "/opt/ml/checkpoints/",
-        filename = today + "_tft-{epoch:02d}-{val_loss:.2f}"   
-    )
-    ########################
-    early_stop_callback = EarlyStopping(monitor="val_loss", min_delta=1e-4, patience=10, verbose=False, mode="min")
-    lr_logger = LearningRateMonitor()  # log the learning rate
+    # Set MLflow experiment
+    client_name = getattr(args, 'client_name', 'default')
+    mlflow.set_experiment(f"TFT-Training-{client_name}")
+    
+    with mlflow.start_run():
+        # Log hyperparameters
+        mlflow.log_params({
+            'learning_rate': args.tft_learning_rate,
+            'hidden_size': args.tft_hidden_size,
+            'dropout': args.tft_dropout,
+            'max_epochs': args.trainer_max_epochs,
+            'batch_size': args.data_loader_batch_size,
+            'max_encoder_length': args.max_encoder_length,
+            'max_prediction_length': args.max_prediction_length,
+            'min_encoder_length': args.min_encoder_length,
+            'min_prediction_length': args.min_prediction_length,
+            'target': args.target,
+            'client_name': client_name,
+        })
+        
+        ### Updated by Arda ####
+        from datetime import datetime, date, timedelta
+        today = date.today()
+        today = str(today).split("-")
+        today = today[0] + today[1] + today[2]
+        checkpoint_callback = ModelCheckpoint(
+            save_top_k = 1,
+            verbose = False,
+            mode = "min",
+            monitor = "val_loss",
+            dirpath = os.getenv('CHECKPOINT_DIR', '/workspace/checkpoints/'),
+            filename = today + "_tft-{epoch:02d}-{val_loss:.2f}"   
+        )
+        ########################
+        early_stop_callback = EarlyStopping(monitor="val_loss", min_delta=1e-4, patience=10, verbose=False, mode="min")
+        lr_logger = LearningRateMonitor()  # log the learning rate
     
     #### comment the logger to figure out the error #####
     #logger = TensorBoardLogger(save_dir = args.output_data_dir, name = "lightning_logs")  # logging results to a tensorboard
@@ -253,14 +285,32 @@ def model(args, train_dataloader, val_dataloader):
         #logger=logger,
     )
     
-    print("Fit Training")
-    trainer.fit(
-        tft,
-        train_dataloader,
-        val_dataloader,
-    )
+        print("Fit Training")
+        trainer.fit(
+            tft,
+            train_dataloader,
+            val_dataloader,
+        )
+        
+        # Log metrics to MLflow
+        best_val_loss = trainer.callback_metrics.get("val_loss")
+        if best_val_loss:
+            mlflow.log_metric("val_loss", best_val_loss.item())
+        
+        # Log model to MLflow (will save to Garage automatically!)
+        mlflow.pytorch.log_model(
+            tft,
+            "model",
+            registered_model_name=f"TFT-{client_name}"
+        )
+        
+        # Log checkpoint path as artifact
+        if checkpoint_callback.best_model_path:
+            mlflow.log_artifact(checkpoint_callback.best_model_path)
+            mlflow.log_param("best_checkpoint_path", checkpoint_callback.best_model_path)
+        
+        print(f"Model logged to MLflow. Best checkpoint: {checkpoint_callback.best_model_path}")
     
-    #print("best_model path:", checkpoint_callback.best_model_path)
     return trainer
 
 
