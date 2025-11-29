@@ -39,16 +39,16 @@ Data Sources → Data Transformation → Data Consolidation → Model Training �
 The project uses a **hybrid deployment pattern** that combines:
 - **Base Docker images**: Contain all dependencies (Python packages, system tools)
 - **Dynamic code download**: Application code downloaded from Garage at runtime
-- **CI/CD automation**: Automated builds and deployments via GitHub Actions
+- **CI/CD automation**: Automated builds and deployments via Gitea Actions
 
 ```
 ┌─────────────────┐
-│  GitHub Push    │
+│   Gitea Push    │
 └────────┬────────┘
          │
          ▼
 ┌─────────────────────────────────────┐
-│     GitHub Actions CI/CD            │
+│      Gitea Actions CI/CD            │
 │  ┌───────────────────────────────┐  │
 │  │ Build Base Docker Images      │  │
 │  │ (only when deps change)       │  │
@@ -100,7 +100,7 @@ The project uses a **hybrid deployment pattern** that combines:
 - **Hybrid Deployment**: Base Docker images + dynamic code download from Garage
 - **MLflow Integration**: Model versioning and artifact storage with Garage
 - **Airflow Orchestration**: Automated workflows using DockerOperator
-- **CI/CD Pipeline**: Automated builds and deployments via GitHub Actions
+- **CI/CD Pipeline**: Automated builds and deployments via Gitea Actions
 
 ## Installation
 
@@ -247,7 +247,7 @@ The project uses a hybrid deployment pattern with Airflow and Garage. See [Deplo
 
 #### Quick Start
 
-1. **Configure GitHub Secrets and Variables** (see [Deployment Guide](docs/deployment.md))
+1. **Configure Gitea Secrets and Variables** (see [Deployment Guide](docs/deployment.md))
 2. **Configure Airflow Variables** (see [Deployment Guide](docs/deployment.md))
 3. **Trigger DAGs** via Airflow UI with configuration:
    ```json
@@ -295,10 +295,12 @@ The project uses a hybrid deployment pattern with Airflow and Garage. See [Deplo
 ├── docs/                      # Documentation
 │   └── deployment.md          # Deployment guide
 ├── backup_dags/               # Legacy Airflow DAGs (SageMaker)
+├── .gitea/
+│   └── workflows/
+│       └── deploy.yml         # CI/CD workflow (hybrid pattern)
 ├── .github/
 │   └── workflows/
-│       ├── deploy.yml         # CI/CD workflow (hybrid pattern)
-│       └── main.yml           # Legacy workflow
+│       └── deploy.yml         # Legacy GitHub Actions workflow (backup)
 ├── configAWSRDS.py            # Database configuration helper
 ├── Support_Functions.py       # Shared utility functions
 ├── static_variables.py        # Static variables (uses env vars)
@@ -342,7 +344,7 @@ See `.env.example` for a complete template (note: `.env.example` may be blocked 
 This project uses a hybrid deployment pattern that combines:
 - **Base Docker images**: Contain all dependencies, rebuilt only when dependencies change
 - **Dynamic code download**: Application code downloaded from Garage at runtime
-- **CI/CD automation**: Automated builds and deployments via GitHub Actions
+- **CI/CD automation**: Automated builds and deployments via Gitea Actions
 
 **Benefits:**
 - Fast code updates (no image rebuilds needed)
@@ -352,13 +354,32 @@ This project uses a hybrid deployment pattern that combines:
 
 For detailed deployment instructions, see [Deployment Guide](docs/deployment.md).
 
+### GPU Support for ML Training
+
+For GPU-accelerated training workloads, this project supports GPU passthrough in Proxmox LXC containers:
+
+- **[Proxmox LXC GPU Setup Guide](docs/proxmox-lxc-gpu-setup.md)**: Complete configuration guide for GPU passthrough
+- **[GPU Troubleshooting Guide](docs/proxmox-lxc-gpu-troubleshooting.md)**: Common issues and solutions
+- **[Airflow GPU Example](docs/airflow-docker-gpu-example.py)**: Example DAG with GPU support
+- **[Dry Run Validation](docs/dry-run-validation.md)**: Validate GPU setup without running training jobs
+
+**Quick Validation:**
+```bash
+# From inside LXC container
+./scripts/validate-gpu-setup.sh
+# Or Python version
+python3 scripts/validate-gpu-setup.py
+```
+
+The `docker_helpers.py` module includes GPU support via the `enable_gpu` parameter in training tasks.
+
 ### CI/CD Pipeline
 
-The GitHub Actions workflow (`.github/workflows/deploy.yml`) automatically:
+The Gitea Actions workflow (`.gitea/workflows/deploy.yml`) automatically:
 1. Builds Docker base images when dependencies change
 2. Packages and uploads code to Garage on every push
 3. Validates deployments
-4. Scans images for security vulnerabilities
+4. Scans images for security vulnerabilities (Trivy)
 
 ### Airflow DAGs
 

@@ -5,18 +5,18 @@
 This project uses a hybrid deployment pattern that combines:
 - **Base Docker images**: Contain all dependencies (Python packages, system tools)
 - **Dynamic code download**: Application code downloaded from Garage at runtime
-- **CI/CD automation**: Automated builds and deployments via GitHub Actions
+- **CI/CD automation**: Automated builds and deployments via Gitea Actions
 
 ## Architecture
 
 ```
 ┌─────────────────┐
-│  GitHub Push    │
+│   Gitea Push    │
 └────────┬────────┘
          │
          ▼
 ┌─────────────────────────────────────┐
-│     GitHub Actions CI/CD            │
+│      Gitea Actions CI/CD            │
 │  ┌───────────────────────────────┐  │
 │  │ Build Base Docker Images      │  │
 │  │ (only when deps change)       │  │
@@ -83,9 +83,9 @@ Set up a Docker registry (self-hosted recommended):
 
 ## Configuration
 
-### GitHub Secrets
+### Gitea Secrets and Variables
 
-Add these secrets in GitHub (Settings → Secrets and variables → Actions):
+Add these secrets and variables in Gitea (Repository Settings → Secrets/Variables):
 
 **Secrets:**
 - `GARAGE_CICD_ACCESS_KEY_ID` - CI/CD access key
@@ -143,7 +143,7 @@ Add these variables in Airflow UI (Admin → Variables):
 ### Step 1: Initial Setup
 
 1. **Set up Garage buckets and keys** (already done)
-2. **Configure GitHub Secrets and Variables**
+2. **Configure Gitea Secrets and Variables**
 3. **Configure Airflow Variables**
 4. **Set up container registry**
 
@@ -157,7 +157,7 @@ Base images are built automatically when:
 To manually trigger image build:
 
 ```bash
-# Via GitHub UI
+# Via Gitea UI
 Actions → Deploy to Garage - Hybrid Pattern → Run workflow → 
   Check "Force rebuild Docker images" → Run workflow
 ```
@@ -255,7 +255,7 @@ The DAG will:
 
 **Solutions:**
 1. Verify registry URL in Airflow Variables
-2. Check if base images were built (check GitHub Actions)
+2. Check if base images were built (check Gitea Actions)
 3. Ensure registry is accessible from Airflow workers
 4. For self-hosted registry, check Docker daemon configuration
 
@@ -287,7 +287,7 @@ The DAG will:
 
 ### Rollback Code Version
 
-1. **Find previous Git SHA** from GitHub commits
+1. **Find previous Git SHA** from Gitea commits
 2. **Trigger DAG with specific version**:
    ```json
    {
@@ -350,8 +350,9 @@ Monitor in MLflow UI:
 
 For issues or questions:
 1. Check Airflow task logs
-2. Review GitHub Actions workflow logs
+2. Review Gitea Actions workflow logs
 3. Check Garage server logs
 4. Review MLflow server logs
 5. Contact ML/Data team
+
 
